@@ -1,3 +1,10 @@
 .env
 .venv/
 
+.DS_Store
+old/
+audio/
+transcript_better/
+transcripts_better/
+transcript/
+transcripts/
