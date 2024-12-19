@@ -5,7 +5,7 @@ from time import sleep
 
 def main():
     # Start backend server
-    backend = subprocess.Popen([sys.executable, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3000"])
+    backend = subprocess.Popen([sys.executable, "-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "3000"])
     
     # Start frontend server
     frontend = subprocess.Popen([sys.executable, "-m", "http.server", "8000"])

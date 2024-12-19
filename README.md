@@ -26,7 +26,7 @@ Interviewer: Wow. Right right about the time Right when we're going to Mars. It'
 
 Elon Musk: Yeah. Absolutely. True. That's that's it just could yeah. Exactly. I was just thinking about that. It was like oh those time frames are kind of coincident.
 ```
-So it does transcript the video, and also identify the speaker.
+So it does transcript the video, and also identify the speaker (*I mean, kind of-*).
 
 ## Features
 

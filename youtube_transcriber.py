@@ -36,80 +36,41 @@ def sanitize_filename(filename):
     return filename.strip()
 
 def download_audio(url, output_path="/tmp/audio"):
+    
     if not os.path.exists(output_path):
         os.makedirs(output_path)
     
-    # Get cookies from environment variable
-    cookies_str = os.getenv('YOUTUBE_COOKIES')
-    if not cookies_str:
-        raise ValueError("YOUTUBE_COOKIES not found in environment variables")
+    # First get the info without downloading
+    with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+        info = ydl.extract_info(url, download=False)
+        title = info['title']
+        # Sanitize the filename before download
+        sanitized_title = sanitize_filename(title)
+        
+        # Check if file already exists
+        expected_filepath = os.path.join(output_path, f"{sanitized_title}.mp3")
+        if os.path.exists(expected_filepath):
+            logger.info(f"File already exists: {expected_filepath}")
+            return expected_filepath, title
     
-    import json
-    import tempfile
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+        # Use pre-sanitized filename
+        'outtmpl': os.path.join(output_path, sanitized_title + '.%(ext)s'),
+    }
     
-    # Create a temporary cookies file
-    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as f:
-        # Modified cookie file header
-        f.write("# Netscape HTTP Cookie File\n")
-        f.write("# https://curl.haxx.se/rfc/cookie_spec.html\n")
-        f.write("# This is a generated file!  Do not edit.\n\n")
-        
-        cookies_dict = json.loads(cookies_str)
-        for cookie_name, cookie_value in cookies_dict.items():
-            # Modified cookie format
-            domain = ".youtube.com"
-            domain_initial_dot = "TRUE"
-            path = "/"
-            secure = "TRUE" if cookie_name.startswith("__Secure") else "FALSE"
-            expiry = str(int(time.time()) + 3600*24*365)  # 1 year from now
-            name = cookie_name
-            value = cookie_value
-            
-            # Write cookie in correct Netscape format
-            f.write(f"{domain}\t{domain_initial_dot}\t{path}\t{secure}\t{expiry}\t{name}\t{value}\n")
-        temp_cookie_file = f.name
-    
-    try:
-        # Use the temporary cookie file
-        ydl_opts = {
-            'quiet': True,
-            'cookiefile': temp_cookie_file
-        }
-        
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            title = info['title']
-            sanitized_title = sanitize_filename(title)
-            
-            # Check if file already exists
-            expected_filepath = os.path.join(output_path, f"{sanitized_title}.mp3")
-            if os.path.exists(expected_filepath):
-                logger.info(f"File already exists: {expected_filepath}")
-                return expected_filepath, title
-        
-        # Update options for actual download
-        ydl_opts.update({
-            'format': 'bestaudio/best',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-            'outtmpl': os.path.join(output_path, sanitized_title + '.%(ext)s'),
-        })
-        
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            logger.info(f"Downloading: {url}")
-            ydl.download([url])
-            filename = f"{sanitized_title}.mp3"
-            filepath = os.path.join(output_path, filename)
-            logger.info(f"Downloaded: {filename}")
-            return filepath, title
-            
-    finally:
-        # Clean up the temporary cookie file
-        if os.path.exists(temp_cookie_file):
-            os.remove(temp_cookie_file)
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        logger.info(f"Downloading: {url}")
+        ydl.download([url])
+        filename = f"{sanitized_title}.mp3"
+        filepath = os.path.join(output_path, filename)
+        logger.info(f"Downloaded: {filename}")
+        return filepath, title
 
 @sleep_and_retry
 @limits(calls=CALLS_PER_SECOND, period=PERIOD)
