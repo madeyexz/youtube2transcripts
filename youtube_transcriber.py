@@ -30,7 +30,7 @@ def sanitize_filename(filename):
     filename = filename.replace(' ', '_')  # Replace spaces with underscores
     return filename.strip()
 
-def download_audio(url, output_path="./audio"):
+def download_audio(url, output_path="/tmp/audio"):
     
     if not os.path.exists(output_path):
         os.makedirs(output_path)

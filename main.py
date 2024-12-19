@@ -46,7 +46,7 @@ async def transcribe_video(request: TranscriptionRequest):
                 raise HTTPException(status_code=500, detail="Failed to process video")
             
             # Clean up audio files
-            audio_dir = "./audio"
+            audio_dir = "/tmp/audio"
             if os.path.exists(audio_dir):
                 for file in os.listdir(audio_dir):
                     file_path = os.path.join(audio_dir, file)
