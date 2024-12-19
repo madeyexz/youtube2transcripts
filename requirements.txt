@@ -8,6 +8,7 @@ cachetools==5.5.0
 certifi==2024.8.30
 charset-normalizer==3.4.0
 defusedxml==0.7.1
+fastapi==0.109.2
 frozenlist==1.5.0
 google-ai-generativelanguage==0.6.10
 google-api-core==2.23.0
@@ -40,6 +41,7 @@ tqdm==4.67.0
 typing-extensions==4.12.2
 uritemplate==4.1.1
 urllib3==2.2.3
+uvicorn==0.27.1
 yarl==1.18.0
 youtube-transcript-api==0.6.3
 yt-dlp==2024.11.18
