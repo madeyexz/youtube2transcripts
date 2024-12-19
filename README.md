@@ -16,7 +16,7 @@ Elon Musk: Um Well you have to say like people I think don't stand back and say 
 
 Interviewer: Yeah.
 ```
-So it does transcript the video, and also identifies the speaker.
+So it does transcript the video, and also identify the speaker.
 
 ## Features
 
@@ -52,22 +52,34 @@ GEMINI_API_KEY=your_api_key_here
 
 ## Usage
 
-Run the script:
+1. Create and activate a virtual environment:
 ```bash
-python youtube_transcriber.py
+uv venv .venv && source .venv/bin/activate && uv pip install -r requirements.txt
 ```
 
-When prompted, enter YouTube URLs one per line. Press Enter twice when done:
-```
-https://youtube.com/watch?v=example1
-https://youtube.com/watch?v=example2
-[Press Enter twice to start processing]
-```
+2. Run the script in one of two ways:
+
+   A. Using the GUI interface:
+   ```bash
+   python run.py
+   ```
+   This will open a graphical interface where you can paste URL and read the transcript.
+
+   B. Using command-line interface:
+   ```bash
+   python youtube_transcriber.py
+   ```
+   When prompted, enter YouTube URLs one per line. Press Enter twice when done:
+   ```
+   https://youtube.com/watch?v=example1
+   https://youtube.com/watch?v=example2
+   [Press Enter twice to start processing]
+   ```
 
 The script will:
 1. Download audio from each URL
 2. Split audio into 20-minute chunks (because Gemini AI has a output token limit of 8k tokens, which is roughly 30 minutes of people talking)
-3. Process each chunk through Gemini AI
+3. Process each chunk through Gemini 1.5 flash
 4. Generate and save transcripts in the `transcripts_better` directory
 
 ## Output
@@ -101,3 +113,5 @@ Contributions are welcome! Please feel free to submit a pull request.
 ## Disclaimer
 
 This tool is for educational purposes only. Please ensure you have the right to download and process any YouTube content before using this tool.
+
+
