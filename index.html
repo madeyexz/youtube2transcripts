@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>YouTube Transcriber</title>
+    <title>YouTube2Transcripts</title>
     <style>
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
@@ -47,14 +47,39 @@
         color: #dc3545;
         margin-top: 10px;
       }
+      .copy-btn {
+        background: #28a745;
+        font-size: 0.9em;
+        padding: 6px 12px;
+      }
+      .copy-btn:hover {
+        background: #218838;
+      }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>YouTube Transcriber</h1>
-
+      <h1>YouTube2Transcripts</h1>
+      <p>
+        A Python tool that downloads YouTube videos as audio and generates
+        detailed transcriptions with speaker diarization using Google Gemini.
+        Created by
+        <a href="https://github.com/madeyexz" target="_blank">madeyexz</a>. View
+        on
+        <a
+          href="https://github.com/madeyexz/youtube2transcripts"
+          target="_blank"
+          >GitHub.
+        </a>
+      </p>
       <div>
         <label for="apiKey">Gemini API Key:</label>
+        <a
+          href="https://aistudio.google.com/apikey"
+          target="_blank"
+          style="font-size: 0.8em; margin-left: 5px"
+          >(get yours here)</a
+        >
         <input
           type="password"
           id="apiKey"
@@ -74,14 +99,6 @@
     </div>
 
     <script>
-      // Check for saved API key on page load
-      window.onload = function () {
-        const savedApiKey = localStorage.getItem("geminiApiKey");
-        if (savedApiKey) {
-          document.getElementById("apiKey").value = savedApiKey;
-        }
-      };
-
       async function transcribeVideo() {
         const apiKey = document.getElementById("apiKey").value;
         const videoUrl = document.getElementById("videoUrl").value;
@@ -95,17 +112,15 @@
           return;
         }
 
-        // Save API key to localStorage
         localStorage.setItem("geminiApiKey", apiKey);
 
-        // Disable button and show loading state
         submitBtn.disabled = true;
         statusDiv.innerHTML =
           "<p>Processing... This may take a few minutes.</p>";
         resultDiv.textContent = "";
 
         try {
-          const response = await fetch("/api/transcribe", {
+          const response = await fetch("http://localhost:3000/api/transcribe", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -123,12 +138,40 @@
           }
 
           statusDiv.innerHTML = "<p>Transcription completed successfully!</p>";
-          resultDiv.textContent = data.message;
+          // Display the transcript with proper formatting
+          resultDiv.innerHTML = `
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>Transcript:</h2>
+                <button onclick="copyTranscript()" class="copy-btn">Copy Transcript</button>
+              </div>
+              <div style="white-space: pre-line; margin-top: 1em; padding: 1em; background: #f8f9fa; border-radius: 4px;">
+                ${data.transcript}
+              </div>
+            `;
         } catch (error) {
           statusDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
         } finally {
           submitBtn.disabled = false;
         }
+      }
+
+      function copyTranscript() {
+        const transcript = document.querySelector(
+          "#result div:last-child"
+        ).innerText;
+        navigator.clipboard
+          .writeText(transcript)
+          .then(() => {
+            const copyBtn = document.querySelector(".copy-btn");
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = "Copied!";
+            setTimeout(() => {
+              copyBtn.textContent = originalText;
+            }, 2000);
+          })
+          .catch((err) => {
+            console.error("Failed to copy text: ", err);
+          });
       }
     </script>
   </body>

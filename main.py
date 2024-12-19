@@ -5,13 +5,21 @@ from pydantic import BaseModel
 import os
 import tempfile
 from youtube_transcriber import process_youtube_url
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s | %(levelname)8s | %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with your frontend URL
+    allow_origins=["http://localhost:8000"],  # Update this to match your frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -24,18 +32,31 @@ class TranscriptionRequest(BaseModel):
 @app.post("/api/transcribe")
 async def transcribe_video(request: TranscriptionRequest):
     try:
-        # Set the API key from the request
         os.environ["GEMINI_API_KEY"] = request.api_key
         
-        # Create a temporary directory for processing
         with tempfile.TemporaryDirectory() as temp_dir:
             os.environ["AUDIO_OUTPUT_DIR"] = temp_dir
-            success = process_youtube_url(request.url)
+            success, transcript_content = process_youtube_url(request.url)
             
             if not success:
                 raise HTTPException(status_code=500, detail="Failed to process video")
             
-            return JSONResponse({"status": "success", "message": "Video processed successfully"})
+            # Clean up audio files
+            audio_dir = "./audio"
+            if os.path.exists(audio_dir):
+                for file in os.listdir(audio_dir):
+                    file_path = os.path.join(audio_dir, file)
+                    try:
+                        if os.path.isfile(file_path):
+                            os.remove(file_path)
+                    except Exception as e:
+                        logger.error(f"Error deleting file {file_path}: {str(e)}")
+            
+            return JSONResponse({
+                "status": "success",
+                "message": "Video processed successfully",
+                "transcript": transcript_content
+            })
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

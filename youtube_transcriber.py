@@ -166,11 +166,11 @@ def process_audio_file(audio_path, original_title=None):
             f.write(combined_transcript)
             
         logger.info(f"✓ Transcript saved: {transcript_path}")
-        return True
+        return combined_transcript  # Return the transcript content
         
     except Exception as e:
         logger.error(f"Failed to process {audio_path}: {str(e)}")
-        return False
+        return None
 
 def split_audio(audio_path, chunk_duration):
     """Split audio file into chunks of specified duration."""
@@ -189,19 +189,26 @@ def split_audio(audio_path, chunk_duration):
 
 def process_youtube_url(url):
     try:
-        # Step 1: Download audio
-        audio_path, original_title = download_audio(url)  # Get both values
+        audio_path, original_title = download_audio(url)
         if not audio_path:
             logger.error(f"Failed to download audio for {url}")
-            return False
+            return False, None
             
-        # Step 2: Generate transcript (pass original title)
-        success = process_audio_file(audio_path, original_title)
-        return success
+        # Get transcript content
+        transcript_content = process_audio_file(audio_path, original_title)
+        
+        # Clean up the original audio file
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+            logger.info(f"Cleaned up audio file: {audio_path}")
+            
+        return True, transcript_content
         
     except Exception as e:
         logger.error(f"Error processing {url}: {str(e)}")
-        return False
+        if 'audio_path' in locals() and os.path.exists(audio_path):
+            os.remove(audio_path)
+        return False, None
 
 def main():
     # Load environment variables
@@ -241,7 +248,7 @@ def main():
                              desc="Processing URLs"):
                 url = future_to_url[future]
                 try:
-                    success = future.result(timeout=60)
+                    success, transcript_content = future.result(timeout=60)
                     if success:
                         logger.info(f"Successfully processed: {url}")
                     else:

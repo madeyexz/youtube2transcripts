@@ -8,3 +8,5 @@ transcript_better/
 transcripts_better/
 transcript/
 transcripts/
+.vercel
+__pycache__/
