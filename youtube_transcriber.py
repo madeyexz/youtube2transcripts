@@ -8,6 +8,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from tenacity import retry, stop_after_attempt, wait_exponential
 from ratelimit import limits, sleep_and_retry
 from pydub import AudioSegment
+import warnings
+
+# Suppress SyntaxWarnings
+warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 # Set up logging
 logging.basicConfig(
@@ -31,15 +35,27 @@ def sanitize_filename(filename):
     return filename.strip()
 
 def download_audio(url, output_path="/tmp/audio"):
-    
     if not os.path.exists(output_path):
         os.makedirs(output_path)
     
+    # Get cookie from environment variable
+    cookie_string = os.getenv('YOUTUBE_COOKIE')
+    if not cookie_string:
+        logger.error("YouTube cookie not found in environment variables")
+        return None, None
+    
     # First get the info without downloading
-    with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+    ydl_opts = {
+        'quiet': True,
+        'cookiesfrombrowser': None,
+        'headers': {
+            'Cookie': cookie_string
+        }
+    }
+    
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
         title = info['title']
-        # Sanitize the filename before download
         sanitized_title = sanitize_filename(title)
         
         # Check if file already exists
@@ -48,16 +64,16 @@ def download_audio(url, output_path="/tmp/audio"):
             logger.info(f"File already exists: {expected_filepath}")
             return expected_filepath, title
     
-    ydl_opts = {
+    # Update options for actual download
+    ydl_opts.update({
         'format': 'bestaudio/best',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
             'preferredquality': '192',
         }],
-        # Use pre-sanitized filename
         'outtmpl': os.path.join(output_path, sanitized_title + '.%(ext)s'),
-    }
+    })
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         logger.info(f"Downloading: {url}")
