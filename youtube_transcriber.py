@@ -9,6 +9,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from ratelimit import limits, sleep_and_retry
 from pydub import AudioSegment
 import warnings
+import time
 
 # Suppress SyntaxWarnings
 warnings.filterwarnings("ignore", category=SyntaxWarning)
@@ -38,50 +39,62 @@ def download_audio(url, output_path="/tmp/audio"):
     if not os.path.exists(output_path):
         os.makedirs(output_path)
     
-    # Get cookie from environment variable
-    cookie_string = os.getenv('YOUTUBE_COOKIE')
-    if not cookie_string:
-        logger.error("YouTube cookie not found in environment variables")
-        return None, None
+    # Get cookies from environment variable
+    cookies_str = os.getenv('YOUTUBE_COOKIES')
+    if not cookies_str:
+        raise ValueError("YOUTUBE_COOKIES not found in environment variables")
     
-    # First get the info without downloading
-    ydl_opts = {
-        'quiet': True,
-        'cookiesfrombrowser': None,
-        'headers': {
-            'Cookie': cookie_string
+    import json
+    import tempfile
+    
+    # Create a temporary cookies file
+    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as f:
+        cookies_dict = json.loads(cookies_str)
+        for cookie_name, cookie_value in cookies_dict.items():
+            f.write(f".youtube.com\tTRUE\t/\tTRUE\t{int(time.time()) + 3600*24*365}\t{cookie_name}\t{cookie_value}\n")
+        temp_cookie_file = f.name
+    
+    try:
+        # Use the temporary cookie file
+        ydl_opts = {
+            'quiet': True,
+            'cookiefile': temp_cookie_file
         }
-    }
-    
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=False)
-        title = info['title']
-        sanitized_title = sanitize_filename(title)
         
-        # Check if file already exists
-        expected_filepath = os.path.join(output_path, f"{sanitized_title}.mp3")
-        if os.path.exists(expected_filepath):
-            logger.info(f"File already exists: {expected_filepath}")
-            return expected_filepath, title
-    
-    # Update options for actual download
-    ydl_opts.update({
-        'format': 'bestaudio/best',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }],
-        'outtmpl': os.path.join(output_path, sanitized_title + '.%(ext)s'),
-    })
-    
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        logger.info(f"Downloading: {url}")
-        ydl.download([url])
-        filename = f"{sanitized_title}.mp3"
-        filepath = os.path.join(output_path, filename)
-        logger.info(f"Downloaded: {filename}")
-        return filepath, title
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            title = info['title']
+            sanitized_title = sanitize_filename(title)
+            
+            # Check if file already exists
+            expected_filepath = os.path.join(output_path, f"{sanitized_title}.mp3")
+            if os.path.exists(expected_filepath):
+                logger.info(f"File already exists: {expected_filepath}")
+                return expected_filepath, title
+        
+        # Update options for actual download
+        ydl_opts.update({
+            'format': 'bestaudio/best',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+            'outtmpl': os.path.join(output_path, sanitized_title + '.%(ext)s'),
+        })
+        
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            logger.info(f"Downloading: {url}")
+            ydl.download([url])
+            filename = f"{sanitized_title}.mp3"
+            filepath = os.path.join(output_path, filename)
+            logger.info(f"Downloaded: {filename}")
+            return filepath, title
+            
+    finally:
+        # Clean up the temporary cookie file
+        if os.path.exists(temp_cookie_file):
+            os.remove(temp_cookie_file)
 
 @sleep_and_retry
 @limits(calls=CALLS_PER_SECOND, period=PERIOD)
