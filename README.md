@@ -1,6 +1,6 @@
-# YouTube Audio Transcriber
+# YouTube2Transcripts (with Speaker Diarization)
 
-A Python tool that downloads YouTube videos as audio and generates detailed transcriptions using Google's Gemini AI. The tool supports batch processing of multiple URLs and includes speaker diarization.
+A Python tool that downloads YouTube videos as audio and generates detailed transcriptions with speaker diarization using Google's Gemini AI. The tool supports batch processing of multiple URLs.
 
 ## Example Result
 
@@ -16,6 +16,7 @@ Elon Musk: Um Well you have to say like people I think don't stand back and say 
 
 Interviewer: Yeah.
 ```
+So it does transcript the video, and also identify the speaker.
 
 ## Features
 
@@ -65,7 +66,7 @@ https://youtube.com/watch?v=example2
 
 The script will:
 1. Download audio from each URL
-2. Split audio into 20-minute chunks
+2. Split audio into 20-minute chunks (because Gemini AI has a output token limit of 8k tokens, which is roughly 30 minutes of people talking)
 3. Process each chunk through Gemini AI
 4. Generate and save transcripts in the `transcripts_better` directory
 
@@ -78,7 +79,9 @@ transcript_[sanitized_video_title].md
 
 ## Configuration
 
-Key constants that can be modified in the script:
+Current LLM model used is `gemini-1.5-flash`, which is the nice multi-modal model that enabled this project.
+
+Key constants that can be modified in the script are listed below, but are not recommended to be modified, especially if you are not paying for the Gemini API.
 - `CALLS_PER_SECOND`: API rate limit (default: 1.8)
 - `MAX_WORKERS`: Maximum concurrent jobs (default: 2)
 - `chunk_duration`: Audio chunk size in minutes (default: 20)
