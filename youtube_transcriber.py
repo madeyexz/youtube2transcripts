@@ -49,9 +49,24 @@ def download_audio(url, output_path="/tmp/audio"):
     
     # Create a temporary cookies file
     with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as f:
+        # Modified cookie file header
+        f.write("# Netscape HTTP Cookie File\n")
+        f.write("# https://curl.haxx.se/rfc/cookie_spec.html\n")
+        f.write("# This is a generated file!  Do not edit.\n\n")
+        
         cookies_dict = json.loads(cookies_str)
         for cookie_name, cookie_value in cookies_dict.items():
-            f.write(f".youtube.com\tTRUE\t/\tTRUE\t{int(time.time()) + 3600*24*365}\t{cookie_name}\t{cookie_value}\n")
+            # Modified cookie format
+            domain = ".youtube.com"
+            domain_initial_dot = "TRUE"
+            path = "/"
+            secure = "TRUE" if cookie_name.startswith("__Secure") else "FALSE"
+            expiry = str(int(time.time()) + 3600*24*365)  # 1 year from now
+            name = cookie_name
+            value = cookie_value
+            
+            # Write cookie in correct Netscape format
+            f.write(f"{domain}\t{domain_initial_dot}\t{path}\t{secure}\t{expiry}\t{name}\t{value}\n")
         temp_cookie_file = f.name
     
     try:
