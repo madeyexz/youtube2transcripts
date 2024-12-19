@@ -19,7 +19,11 @@ app = FastAPI()
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000"],  # Update this to match your frontend URL
+    allow_origins=[
+        "http://localhost:8000",
+        "https://*.vercel.app",  # Allow all Vercel preview deployments
+        "https://youtube2transcripts.vercel.app"  # Replace with your actual domain
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

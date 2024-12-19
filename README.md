@@ -16,7 +16,7 @@ Elon Musk: Um Well you have to say like people I think don't stand back and say 
 
 Interviewer: Yeah.
 ```
-So it does transcript the video, and also identify the speaker.
+So it does transcript the video, and also identifies the speaker.
 
 ## Features
 
